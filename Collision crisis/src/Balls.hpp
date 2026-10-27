@@ -42,7 +42,7 @@ private:
 public:
     BallGame(const sf::Vector2u& windowSize) {
 
-        auto ballCount = 15000;
+        auto ballCount = 7500;
         auto ballSize = 2.5f;
 
         gen = std::mt19937(rd());
