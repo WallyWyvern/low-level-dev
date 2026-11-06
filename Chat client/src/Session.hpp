@@ -13,12 +13,13 @@ using asio::ip::tcp;
 // Session: a connected client, owns the socket
 class Session : public std::enable_shared_from_this<Session> {
 public:
-    using MessageHandler = std::function<void(SessionPtr, std::string&)>;
+    using MessageHandler = std::function<void(SessionPtr, std::string)>;
     using CloseHandler = std::function<void(SessionPtr)>;
 
     Session(tcp::socket socket, MessageHandler on_message, CloseHandler on_close);
 
     void start();
+    void close();
     void send(const std::string& message);
 
     const std::string& id() const;

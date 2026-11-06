@@ -18,10 +18,18 @@ using namespace std::chrono_literals;
 int main(int argc, char* argv[]) {
     const std::string host = argc > 1 ? argv[1] : "127.0.0.1";
     const std::string port = argc > 2 ? argv[2] : "5555";
+    std::string password;
+    std::string username;
+    std::atomic<bool> isBanned{false}; //for thread safety according to gemini,
+
+    std::cout << "Please enter a username, if it does not exist it will be created: " << std::endl;
+    std::cin >> username;
+    std::cout << "Please enter your password: " << std::endl;
+    std::cin >> password;
 
     asio::io_context io;
     ChatClient client{io};
-    client.connect(host, port);
+    client.connect(host, port, username, password);
 
     // Run the io_context on its own thread so stdin can be read on main().
     auto work_guard = asio::make_work_guard(io);
@@ -29,7 +37,7 @@ int main(int argc, char* argv[]) {
 
     // Background printer: drains incoming messages as they arrive.
     std::thread print_thread{
-        [&client] {
+        [&client, &isBanned] {
             std::string msg;
             while (true) {
                 if (client.poll_message(msg)) {
@@ -43,9 +51,18 @@ int main(int argc, char* argv[]) {
                         std::cout << "[INFO] connected as " << body << "\n";
                     } else if (type == "MSG") {
                         std::cout << body << "\n";
-                    } /*else if (type=="") {
-
-                    }*/
+                    } else if (type=="CONNECTIONERROR") {
+                        std::cout << "[Connection Error]" + body << "\n";
+                        client.close();
+                    } else if (type== "CMDERROR")
+                    {
+                        std::cout << "[Command error]" + body << "\n";
+                    } else if (type== "BAN")
+                    {
+                        std::cout << "[Connection Error]" + body << "\n";
+                        isBanned = true;
+                        client.close();
+                    }
                 } else {
                     std::this_thread::sleep_for(20ms);
                 }
@@ -59,9 +76,9 @@ int main(int argc, char* argv[]) {
         if (!client.last_error().empty() && !client.is_connected()) {
             std::cout << "Error: " << client.last_error().c_str() << "\n";
             // Simple reconnect loop
-            while (!client.is_connected()) {
+            while (!client.is_connected() & !isBanned) {
                 std::cout << "[attempting reconnect]\n";
-                client.connect(host, port);
+                client.connect(host, port, username, password);
                 std::this_thread::sleep_for(5s);
             }
         }
@@ -69,6 +86,7 @@ int main(int argc, char* argv[]) {
             auto commandEnd = line.find(' ');
             if (commandEnd != std::string::npos) {
                 auto command = line.substr(1, commandEnd - 1);
+                std::transform(command.begin(), command.end(), command.begin(), ::toupper);
                 client.send({command + '|' + line.substr(commandEnd + 1)});
             }
         } else if (!line.empty()) {

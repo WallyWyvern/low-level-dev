@@ -37,6 +37,8 @@ int main() {
     // UI state
     char host_buf[128] = "127.0.0.1";
     char port_buf[16] = "5555";
+    char user_buf[128];
+    char pass_buf[128];
     char message_buf[512] = "";
     std::vector<LogLine> log;
     bool auto_scroll = true;
@@ -84,8 +86,10 @@ int main() {
         ImGui::BeginDisabled(client.is_connected() || client.is_connecting());
         ImGui::InputText("Host", host_buf, sizeof(host_buf));
         ImGui::InputText("Port", port_buf, sizeof(port_buf));
+        ImGui::InputText("User", user_buf, sizeof(user_buf));
+        ImGui::InputText("Pass", pass_buf, sizeof(pass_buf));
         if (ImGui::Button("Connect")) {
-            client.connect(host_buf, port_buf);
+            client.connect(host_buf, port_buf, user_buf, pass_buf);
         }
         ImGui::EndDisabled();
 

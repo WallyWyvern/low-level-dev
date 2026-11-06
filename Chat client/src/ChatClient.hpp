@@ -11,9 +11,10 @@ class ChatClient {
 public:
     explicit ChatClient(asio::io_context& io);
 
-    void connect(const std::string& host, const std::string& port);
+    void connect(const std::string& host, const std::string& port, const std::string& user, const std::string& pass);
     void send(const std::string& msg);
     void send_chat_message(const std::string& text);
+    void close();
 
     bool poll_message(std::string& out);
 
